@@ -1,0 +1,269 @@
+{
+  "name": "RoboticsForSure PAA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "RoboticsForeSure",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a4118cbc-50cd-494f-a2fc-34982ef35f5b",
+      "name": "Webhook",
+      "webhookId": "2d87e97f-f92e-4be3-a525-e8ae229449b7"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "814b04e7-b176-46fd-800d-2056e78d92b9",
+              "name": "=user_aad_id",
+              "value": "={{ $json.body.from.aadObjectId }}",
+              "type": "string"
+            },
+            {
+              "id": "0c2c6a85-58b1-42a4-b0a8-e52a7d9a4cf1",
+              "name": "=conversation_id",
+              "value": "={{ $json.body.conversation.id }}",
+              "type": "string"
+            },
+            {
+              "id": "d34cb7b5-d025-405a-becd-0283f810d762",
+              "name": "=user_message",
+              "value": "={{ $json.body.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        -140
+      ],
+      "id": "f6b735cd-02f9-4cb1-a285-0fcc02ca0152",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.body.attachments[0].content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        340,
+        260
+      ],
+      "id": "e2b3ebb0-9a7f-4e60-a158-e12137ecadfe",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "6gaVI2yBWzgFDbHe",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.microsoft.com/v1.0/users/{{ $json.user_aad_id }}/chats",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "=$filter",
+              "value": "=chatType eq 'oneOnOne'"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        -140
+      ],
+      "id": "2f82ffdd-b262-442d-8790-b22db9f5a09a",
+      "name": "HTTP Request",
+      "credentials": {
+        "oAuth2Api": {
+          "id": "BxiqJZAdVYhI83I2",
+          "name": "MicrosoftGrapAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "aef61bd4-8059-4935-9a89-149ded3c0aa2",
+              "name": "=chat_id",
+              "value": "={{ $json.value[0].id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        580,
+        -140
+      ],
+      "id": "e1d56e2d-852a-4d9f-a93c-597e0a7e8d99",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        860,
+        80
+      ],
+      "id": "fd857918-9bad-4458-a005-7cfe4d44255e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "resource": "chatMessage",
+        "chatId": {
+          "__rl": true,
+          "value": "={{ $json.chat_id }}",
+          "mode": "id"
+        },
+        "message": "={{ $json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftTeams",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        80
+      ],
+      "id": "b963b0e0-3540-478c-97c9-07a8e42ced23",
+      "name": "Microsoft Teams",
+      "webhookId": "3f65da08-7e9b-4359-b069-904754696878",
+      "credentials": {
+        "microsoftTeamsOAuth2Api": {
+          "id": "buCKituGoPpqPSPx",
+          "name": "Microsoft Teams account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Microsoft Teams",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0925316f-a9a5-474e-b53b-869515a21270",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f16f6be955dfa47d54e369bb86a24ccafc0e4c9c43278c266efd0e058f0e364"
+  },
+  "id": "kCGSmh2rErE1Ups5",
+  "tags": []
+}
